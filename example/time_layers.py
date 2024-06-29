@@ -1,5 +1,40 @@
 import numpy as np
 
+class TimeRNN:
+    def __init__(self,Wx,Wh,b,stateful=False):
+        # 배치가 다른 분야의 문장이거나 할때, stateful false로 연관성 없애준대
+        self.params=[Wx,Wh,b]
+        self.grads=[np.zeros_like(Wx),np.zeros_like(Wh),np.zeros_like(b)]
+        self.layers=None
+
+        self.h,self.dh=None,None
+        self.stateful=stateful
+
+    def set_state(self,h):
+        self.h=h
+    
+    def reset_state(self):
+        self.h=None
+
+    def forward(self,xs):
+        Wx,Wh,b=self.params
+        N,T,D=xs.shape # N: 미니배치 T: 시퀀스 길이 D: 임베딩 벡터 크기
+        D,H=Wx.shape
+
+        self.layers=[]
+        hs=np.empty((N,T,H), dtype='f') # 은닉상태 저장용
+
+        if not self.stateful or self.h is None: 
+            self.h=np.zeros((N,H), dtype='f') # 최초 호출 시, 초기화
+        
+        for t in range(T):
+            layer=RNN(Wx,Wh,b)
+            self.h=layer.forward(xs[:,t,:],self.h)
+            hs[:,t,:]=self.h
+            self.layers.append(layer)
+
+        return hs
+
 class RNN:
     def __init__(self, Wx, Wh,b):
         self.params=[Wx,Wh,b]
